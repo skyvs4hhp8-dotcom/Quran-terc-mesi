@@ -6,9 +6,10 @@
     <title>Qur'an Tərcüməsi Layihəsi</title>
     <style>
         body { font-family: sans-serif; background: #121212; color: #fff; margin: 0; padding: 15px; }
-        h1, h2 { text-align: center; color: #4caf50; }
+        h1, h2, h3 { text-align: center; color: #4caf50; margin-bottom: 10px; }
         .container { max-width: 600px; margin: auto; }
-        .surah-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; margin-top: 20px; }
+        .search-box { margin-bottom: 15px; }
+        .surah-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; margin-top: 15px; }
         .surah-btn { background: #1e1e1e; border: 1px solid #333; color: #fff; padding: 12px; border-radius: 8px; cursor: pointer; text-align: left; }
         .surah-btn:hover { background: #4caf50; }
         .hidden { display: none; }
@@ -17,7 +18,9 @@
         textarea, input { width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #444; background: #2b2b2b; color: white; box-sizing: border-box; }
         .save-btn { background: #4caf50; color: white; border: none; padding: 10px; border-radius: 5px; cursor: pointer; font-weight: bold; }
         .verse-card { background: #1e1e1e; padding: 12px; border-radius: 6px; margin-bottom: 10px; border-left: 4px solid #4caf50; position: relative; }
-        .delete-btn { position: absolute; right: 10px; top: 10px; background: #ff5252; border: none; color: white; border-radius: 3px; cursor: pointer; padding: 2px 6px; }
+        .action-btns { position: absolute; right: 10px; top: 10px; display: flex; gap: 5px; }
+        .copy-btn { background: #2196F3; border: none; color: white; border-radius: 3px; cursor: pointer; padding: 4px 8px; font-size: 12px; }
+        .delete-btn { background: #ff5252; border: none; color: white; border-radius: 3px; cursor: pointer; padding: 4px 8px; font-size: 12px; }
     </style>
 </head>
 <body>
@@ -26,6 +29,12 @@
     <!-- SURƏLƏR SİYAHISI -->
     <div id="surah-view">
         <h1>Qur'an Surələri</h1>
+        
+        <!-- SURƏ AXTARIŞI -->
+        <div class="search-box">
+            <input type="text" id="surah-search" placeholder="Surə adı və ya nömrəsi axtar..." onkeyup="filterSurahs()">
+        </div>
+
         <div class="surah-list" id="surah-container"></div>
     </div>
 
@@ -35,12 +44,18 @@
         <h2 id="current-surah-title"></h2>
 
         <div class="add-box">
-            <input type="number" id="verse-num" placeholder="Ayə nömrəsi (Məs: 1)">
+            <input type="number" id="verse-num" placeholder="Ayə nömrəsi (Məs: 23)">
             <textarea id="verse-text" rows="3" placeholder="Ayənin mətnini və ya tərcüməsini yazın..."></textarea>
             <button class="save-btn" onclick="addVerse()">Ayəni Əlavə Et</button>
         </div>
 
         <h3>Əlavə Olunmuş Ayələr:</h3>
+        
+        <!-- AYƏ AXTARIŞI -->
+        <div class="search-box">
+            <input type="text" id="verse-search" placeholder="Bu surədə ayə nömrəsi və ya söz axtar..." onkeyup="filterVerses()">
+        </div>
+
         <div id="verses-container"></div>
     </div>
 </div>
@@ -62,22 +77,34 @@
     ];
 
     let currentSurahIndex = null;
-
-    // Surələri ekrana düzürük
     const surahContainer = document.getElementById('surah-container');
-    surahNames.forEach((name, index) => {
-        const btn = document.createElement('button');
-        btn.className = 'surah-btn';
-        btn.innerText = name;
-        btn.onclick = () => openSurah(index + 1, name);
-        surahContainer.appendChild(btn);
-    });
+
+    function renderSurahs(list) {
+        surahContainer.innerHTML = '';
+        list.forEach((name) => {
+            const originalIndex = surahNames.indexOf(name) + 1;
+            const btn = document.createElement('button');
+            btn.className = 'surah-btn';
+            btn.innerText = name;
+            btn.onclick = () => openSurah(originalIndex, name);
+            surahContainer.appendChild(btn);
+        });
+    }
+
+    renderSurahs(surahNames);
+
+    function filterSurahs() {
+        const query = document.getElementById('surah-search').value.toLowerCase();
+        const filtered = surahNames.filter(name => name.toLowerCase().includes(query));
+        renderSurahs(filtered);
+    }
 
     function openSurah(id, name) {
         currentSurahIndex = id;
         document.getElementById('surah-view').classList.add('hidden');
         document.getElementById('verse-view').classList.remove('hidden');
         document.getElementById('current-surah-title').innerText = name;
+        document.getElementById('verse-search').value = '';
         loadVerses();
     }
 
@@ -102,7 +129,6 @@
         let data = getStorageData();
         if (!data[currentSurahIndex]) data[currentSurahIndex] = [];
 
-        // Eyni ayə nömrəsinin olub-olmadığını yoxlayırıq (Təkrarın qarşısını alır)
         const exists = data[currentSurahIndex].some(v => v.num == num);
         if (exists) {
             alert(`Bu surədə artıq ${num}-ci ayə var! Eyni ayəni təkrarlaya bilməzsən.`);
@@ -110,7 +136,8 @@
         }
 
         data[currentSurahIndex].push({ num: parseInt(num), text: text });
-        // Ayələri nömrəsinə görə sıralayırıq
+        
+        // RƏQƏM SIRALAMASI: Həmişə ayə nömrəsinə görə kiçikdən böyüyə düzür
         data[currentSurahIndex].sort((a, b) => a.num - b.num);
 
         localStorage.setItem('quran_data', JSON.stringify(data));
@@ -120,28 +147,48 @@
         loadVerses();
     }
 
-    function loadVerses() {
+    function loadVerses(filterQuery = '') {
         const container = document.getElementById('verses-container');
         container.innerHTML = '';
         let data = getStorageData();
         let verses = data[currentSurahIndex] || [];
 
-        verses.forEach((verse, i) => {
+        // Axtarış filtri
+        if (filterQuery) {
+            verses = verses.filter(v => v.num.toString().includes(filterQuery) || v.text.toLowerCase().includes(filterQuery.toLowerCase()));
+        }
+
+        verses.forEach((verse) => {
             const div = document.createElement('div');
             div.className = 'verse-card';
             div.innerHTML = `
                 <strong>Ayə ${verse.num}:</strong> <p style="margin: 5px 0 0 0;">${verse.text}</p>
-                <button class="delete-btn" onclick="deleteVerse(${i})">Sil</button>
+                <div class="action-btns">
+                    <button class="copy-btn" onclick="copyVerse('${verse.num}', \`${verse.text}\`)">Kopyala</button>
+                    <button class="delete-btn" onclick="deleteVerseByNum(${verse.num})">Sil</button>
+                </div>
             `;
             container.appendChild(div);
         });
     }
 
-    function deleteVerse(index) {
+    function filterVerses() {
+        const query = document.getElementById('verse-search').value.trim();
+        loadVerses(query);
+    }
+
+    function copyVerse(num, text) {
+        const surahName = surahNames[currentSurahIndex - 1];
+        const fullText = `${surahName}, ${num}-ci ayə: ${text}`;
+        navigator.clipboard.writeText(fullText);
+        alert('Ayə kopyalandı!');
+    }
+
+    function deleteVerseByNum(verseNum) {
         let data = getStorageData();
-        data[currentSurahIndex].splice(index, 1);
+        data[currentSurahIndex] = data[currentSurahIndex].filter(v => v.num !== verseNum);
         localStorage.setItem('quran_data', JSON.stringify(data));
-        loadVerses();
+        loadVerses(document.getElementById('verse-search').value.trim());
     }
 </script>
 
