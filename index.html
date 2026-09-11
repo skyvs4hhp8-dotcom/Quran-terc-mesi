@@ -1,59 +1,333 @@
-DOCTYPE html>
+<!DOCTYPE html>
 <html lang="az">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Qur'an Tərcüməsi Layihəsi</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Qur'an Tərcüməsi Arxivi</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: sans-serif; background: #121212; color: #fff; margin: 0; padding: 15px; }
-        h1, h2, h3 { text-align: center; color: #4caf50; margin-bottom: 10px; }
-        .container { max-width: 600px; margin: auto; }
-        .search-box { margin-bottom: 15px; }
-        .surah-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; margin-top: 15px; }
-        .surah-btn { background: #1e1e1e; border: 1px solid #333; color: #fff; padding: 12px; border-radius: 8px; cursor: pointer; text-align: left; }
-        .surah-btn:hover { background: #4caf50; }
-        .hidden { display: none; }
-        .back-btn { background: #ff5252; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; margin-bottom: 15px; }
-        .add-box { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; background: #1e1e1e; padding: 15px; border-radius: 8px; }
-        textarea, input { width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #444; background: #2b2b2b; color: white; box-sizing: border-box; }
-        .save-btn { background: #4caf50; color: white; border: none; padding: 10px; border-radius: 5px; cursor: pointer; font-weight: bold; }
-        .verse-card { background: #1e1e1e; padding: 12px; border-radius: 6px; margin-bottom: 10px; border-left: 4px solid #4caf50; position: relative; }
-        .action-btns { position: absolute; right: 10px; top: 10px; display: flex; gap: 5px; }
-        .copy-btn { background: #2196F3; border: none; color: white; border-radius: 3px; cursor: pointer; padding: 4px 8px; font-size: 12px; }
-        .delete-btn { background: #ff5252; border: none; color: white; border-radius: 3px; cursor: pointer; padding: 4px 8px; font-size: 12px; }
+        :root {
+            --bg-color: #0d1117;
+            --card-bg: rgba(22, 27, 34, 0.85);
+            --card-border: rgba(255, 255, 255, 0.1);
+            --primary: #10b981;
+            --primary-glow: rgba(16, 185, 129, 0.25);
+            --accent: #3b82f6;
+            --danger: #ef4444;
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(16, 185, 129, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(59, 130, 246, 0.1) 0px, transparent 50%);
+            background-attachment: fixed;
+            color: var(--text-main);
+            margin: 0;
+            padding: 16px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 500px;
+            margin: auto;
+            padding-bottom: 30px;
+        }
+
+        .app-header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 10px 0;
+        }
+
+        .app-header h1 {
+            font-size: 24px;
+            font-weight: 700;
+            margin: 0;
+            background: linear-gradient(135deg, #34d399, #10b981);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .app-header p {
+            color: var(--text-muted);
+            font-size: 13px;
+            margin-top: 4px;
+        }
+
+        .search-box {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 14px 16px 14px 42px;
+            border-radius: 14px;
+            border: 1px solid var(--card-border);
+            background: rgba(22, 27, 34, 0.9);
+            color: #fff;
+            font-size: 15px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px var(--primary-glow);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            pointer-events: none;
+        }
+
+        .surah-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        .surah-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            padding: 14px;
+            border-radius: 14px;
+            color: #fff;
+            cursor: pointer;
+            backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .surah-card:active {
+            transform: scale(0.97);
+        }
+
+        .surah-badge {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--primary);
+            font-weight: 700;
+            font-size: 13px;
+            min-width: 32px;
+            height: 32px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+
+        .surah-title {
+            font-weight: 600;
+            font-size: 14px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .back-btn {
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--text-main);
+            border: 1px solid var(--card-border);
+            padding: 10px 16px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+
+        .add-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            padding: 18px;
+            border-radius: 18px;
+            margin-bottom: 24px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .input-group {
+            margin-bottom: 12px;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+            text-transform: uppercase;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px 14px;
+            border-radius: 10px;
+            border: 1px solid var(--card-border);
+            background: rgba(13, 17, 23, 0.8);
+            color: #fff;
+            font-size: 14px;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        textarea.form-control {
+            resize: vertical;
+            min-height: 120px;
+        }
+
+        .btn-primary {
+            width: 100%;
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            border: none;
+            padding: 14px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 15px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px var(--primary-glow);
+        }
+
+        .btn-primary:active {
+            transform: scale(0.98);
+        }
+
+        .verse-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 12px;
+        }
+
+        .verse-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .verse-number {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--primary);
+            font-size: 12px;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 20px;
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+
+        .verse-actions {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+        }
+
+        .action-btn {
+            border: none;
+            padding: 5px 8px;
+            border-radius: 7px;
+            font-size: 10px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .btn-male {
+            background: rgba(59, 130, 246, 0.15);
+            color: var(--accent);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+        }
+
+        .btn-female {
+            background: rgba(236, 72, 153, 0.15);
+            color: #ec4899;
+            border: 1px solid rgba(236, 72, 153, 0.2);
+        }
+
+        .btn-copy {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--primary);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+
+        .btn-delete {
+            background: rgba(239, 68, 68, 0.15);
+            color: var(--danger);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
+        .verse-text {
+            font-size: 15px;
+            line-height: 1.6;
+            color: #e5e7eb;
+            margin: 0;
+            white-space: pre-line;
+        }
+
+        .hidden { display: none !important; }
+
+        .empty-state {
+            text-align: center;
+            padding: 30px;
+            color: var(--text-muted);
+            font-size: 14px;
+        }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <!-- SURƏLƏR SİYAHISI -->
     <div id="surah-view">
-        <h1>Qur'an Surələri</h1>
+        <div class="app-header">
+            <h1>Qur'an Arxivim</h1>
+            <p>Şəxsi Debat və Araşdırma Bazasım</p>
+        </div>
         
-        <!-- SURƏ AXTARIŞI -->
         <div class="search-box">
-            <input type="text" id="surah-search" placeholder="Surə adı və ya nömrəsi axtar..." onkeyup="filterSurahs()">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="surah-search" class="search-input" placeholder="Surə adı və ya nömrəsi..." onkeyup="filterSurahs()">
         </div>
 
-        <div class="surah-list" id="surah-container"></div>
+        <div class="surah-grid" id="surah-container"></div>
     </div>
 
-    <!-- AYƏ ƏLAVƏ ET MƏRHƏLƏSİ -->
     <div id="verse-view" class="hidden">
-        <button class="back-btn" onclick="showSurahs()">← Geri (Surələr)</button>
-        <h2 id="current-surah-title"></h2>
+        <button class="back-btn" onclick="showSurahs()">← Surələrə Qayıt</button>
 
-        <div class="add-box">
-            <input type="number" id="verse-num" placeholder="Ayə nömrəsi (Məs: 23)">
-            <textarea id="verse-text" rows="3" placeholder="Ayənin mətnini və ya tərcüməsini yazın..."></textarea>
-            <button class="save-btn" onclick="addVerse()">Ayəni Əlavə Et</button>
+        <div class="app-header" style="text-align: left; margin-bottom: 15px;">
+            <h1 id="current-surah-title" style="font-size: 22px;"></h1>
         </div>
 
-        <h3>Əlavə Olunmuş Ayələr:</h3>
-        
-        <!-- AYƏ AXTARIŞI -->
+        <div class="add-card">
+            <div class="input-group">
+                <label>Ayələri Birbaşa Yapışdır (Məs: 7. Mətn... və ya 7 - Mətn)</label>
+                <textarea id="verse-text" class="form-control" placeholder="7. Ayənin mətni buraya...&#10;8. Digər ayənin mətni..."></textarea>
+            </div>
+            <button class="btn-primary" onclick="addVerse()">+ Avtomatik Ayə(lər)i Əlavə Et</button>
+        </div>
+
         <div class="search-box">
-            <input type="text" id="verse-search" placeholder="Bu surədə ayə nömrəsi və ya söz axtar..." onkeyup="filterVerses()">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="verse-search" class="search-input" placeholder="Bu surədə axtar..." onkeyup="filterVerses()">
         </div>
 
         <div id="verses-container"></div>
@@ -62,18 +336,18 @@ DOCTYPE html>
 
 <script>
     const surahNames = [
-        "1. Fatihə", "2. Bəqərə", "3. Ali-İmran", "4. Nisa", "5. Maidə", "6. Ənam", "7. Əraf", "8. Ənfəl", "9. Tövbə", "10. Yunus",
-        "11. Hud", "12. Yusuf", "13. Rəd", "14. İbrahim", "15. Hicr", "16. Nəhl", "17. İsra", "18. Kəhf", "19. Məryəm", "20. Taha",
-        "21. Ənbiya", "22. Həcc", "23. Möminun", "24. Nur", "25. Furqan", "26. Şüəra", "27. Nəml", "28. Qəsəs", "29. Ənkəbut", "30. Rum",
-        "31. Loğman", "32. Səcdə", "33. Əhzab", "34. Səba", "35. Fatir", "36. Yasin", "37. Saffat", "38. Sad", "39. Zümər", "40. Qafir",
-        "41. Fussilət", "42. Şura", "43. Zuhruf", "44. Duhan", "45. Casiyə", "46. Əhqaf", "47. Məhəmməd", "48. Fətih", "49. Hucurat", "50. Qaf",
-        "51. Zariyat", "52. Tur", "53. Nəcm", "54. Qəmər", "55. Rəhman", "56. Vaqiə", "57. Hədid", "58. Mücadilə", "59. Həşr", "60. Mütəhinə",
-        "61. Səff", "62. Cümə", "63. Münafiqun", "64. Təğabun", "65. Talaq", "66. Təhrim", "67. Mülk", "68. Qələm", "69. Haqqa", "70. Məaric",
-        "71. Nuh", "72. Cinn", "73. Müzzəmmil", "74. Müddəssir", "75. Qiyamət", "76. İnsan", "77. Mürsəlat", "78. Nəbə", "79. Naziat", "80. Əbəsə",
-        "81. Təkvir", "82. İnfitar", "83. Mutaffifin", "84. İnşiqaq", "85. Büruc", "86. Tariq", "87. Əla", "88. Ğaşiyə", "89. Fəcr", "90. Bələd",
-        "91. Şəms", "92. Leyl", "93. Zuha", "94. İnşirah", "95. Tin", "96. Ələq", "97. Qədr", "98. Bəyyinə", "99. Zilzal", "100. Adiyat",
-        "101. Qariə", "102. Təkasür", "103. Əsr", "104. Huməzə", "105. Fil", "106. Qureyş", "107. Maun", "108. Kevsər", "109. Kafirun", "110. Nəsr",
-        "111. Məsəd", "112. İxlas", "113. Fələq", "114. Nas"
+        "Fatihə", "Bəqərə", "Ali-İmran", "Nisa", "Maidə", "Ənam", "Əraf", "Ənfəl", "Tövbə", "Yunus",
+        "Hud", "Yusuf", "Rəd", "İbrahim", "Hicr", "Nəhl", "İsra", "Kəhf", "Məryəm", "Taha",
+        "Ənbiya", "Həcc", "Möminun", "Nur", "Furqan", "Şüəra", "Nəml", "Qəsəs", "Ənkəbut", "Rum",
+        "Loğman", "Səcdə", "Əhzab", "Səba", "Fatir", "Yasin", "Saffat", "Sad", "Zümər", "Qafir",
+        "Fussilət", "Şura", "Zuhruf", "Duhan", "Casiyə", "Əhqaf", "Məhəmməd", "Fətih", "Hucurat", "Qaf",
+        "Zariyat", "Tur", "Nəcm", "Qəmər", "Rəhman", "Vaqiə", "Hədid", "Mücadilə", "Həşr", "Mütəhinə",
+        "Səff", "Cümə", "Münafiqun", "Təğabun", "Talaq", "Təhrim", "Mülk", "Qələm", "Haqqa", "Məaric",
+        "Nuh", "Cinn", "Müzzəmmil", "Müddəssir", "Qiyamət", "İnsan", "Mürsəlat", "Nəbə", "Naziat", "Əbəsə",
+        "Təkvir", "İnfitar", "Mutaffifin", "İnşiqaq", "Büruc", "Tariq", "Əla", "Ğaşiyə", "Fəcr", "Bələd",
+        "Şəms", "Leyl", "Zuha", "İnşirah", "Tin", "Ələq", "Qədr", "Bəyyinə", "Zilzal", "Adiyat",
+        "Qariə", "Təkasür", "Əsr", "Huməzə", "Fil", "Qureyş", "Maun", "Kevsər", "Kafirun", "Nəsr",
+        "Məsəd", "İxlas", "Fələq", "Nas"
     ];
 
     let currentSurahIndex = null;
@@ -83,11 +357,11 @@ DOCTYPE html>
         surahContainer.innerHTML = '';
         list.forEach((name) => {
             const originalIndex = surahNames.indexOf(name) + 1;
-            const btn = document.createElement('button');
-            btn.className = 'surah-btn';
-            btn.innerText = name;
-            btn.onclick = () => openSurah(originalIndex, name);
-            surahContainer.appendChild(btn);
+            const card = document.createElement('div');
+            card.className = 'surah-card';
+            card.onclick = () => openSurah(originalIndex, `${originalIndex}. ${name}`);
+            card.innerHTML = `<div class="surah-badge">${originalIndex}</div><div class="surah-title">${name}</div>`;
+            surahContainer.appendChild(card);
         });
     }
 
@@ -95,7 +369,7 @@ DOCTYPE html>
 
     function filterSurahs() {
         const query = document.getElementById('surah-search').value.toLowerCase();
-        const filtered = surahNames.filter(name => name.toLowerCase().includes(query));
+        const filtered = surahNames.filter((name, idx) => `${idx + 1}. ${name}`.toLowerCase().includes(query));
         renderSurahs(filtered);
     }
 
@@ -105,12 +379,14 @@ DOCTYPE html>
         document.getElementById('verse-view').classList.remove('hidden');
         document.getElementById('current-surah-title').innerText = name;
         document.getElementById('verse-search').value = '';
+        window.scrollTo(0, 0);
         loadVerses();
     }
 
     function showSurahs() {
         document.getElementById('surah-view').classList.remove('hidden');
         document.getElementById('verse-view').classList.add('hidden');
+        window.scrollTo(0, 0);
     }
 
     function getStorageData() {
@@ -118,33 +394,46 @@ DOCTYPE html>
     }
 
     function addVerse() {
-        const num = document.getElementById('verse-num').value.trim();
-        const text = document.getElementById('verse-text').value.trim();
+        const textInput = document.getElementById('verse-text').value.trim();
 
-        if (!num || !text) {
-            alert('Xahiş olunur ayə nömrəsini və mətni daxil edin!');
+        if (!textInput) {
+            alert('Lütfən mətni daxil edin!');
             return;
         }
 
         let data = getStorageData();
         if (!data[currentSurahIndex]) data[currentSurahIndex] = [];
 
-        const exists = data[currentSurahIndex].some(v => v.num == num);
-        if (exists) {
-            alert(`Bu surədə artıq ${num}-ci ayə var! Eyni ayəni təkrarlaya bilməzsən.`);
+        const lines = textInput.split('\n');
+        let addedCount = 0;
+
+        lines.forEach(line => {
+            const trimmed = line.trim();
+            if (!trimmed) return;
+
+            const match = trimmed.match(/^(\d+)[\.\-\:\)]?\s*(.+)$/);
+
+            if (match) {
+                const num = parseInt(match[1]);
+                const text = match[2].trim();
+
+                data[currentSurahIndex] = data[currentSurahIndex].filter(v => v.num !== num);
+                data[currentSurahIndex].push({ num: num, text: text });
+                addedCount++;
+            }
+        });
+
+        if (addedCount === 0) {
+            alert('Ayə nömrəsi tapılmadı! Zəhmət olmasa sətrin əvvəlində nömrə yazın (məsələn: 7. Mətn...)');
             return;
         }
 
-        data[currentSurahIndex].push({ num: parseInt(num), text: text });
-        
-        // RƏQƏM SIRALAMASI: Həmişə ayə nömrəsinə görə kiçikdən böyüyə düzür
         data[currentSurahIndex].sort((a, b) => a.num - b.num);
-
         localStorage.setItem('quran_data', JSON.stringify(data));
-        
-        document.getElementById('verse-num').value = '';
+
         document.getElementById('verse-text').value = '';
         loadVerses();
+        alert(`${addedCount} ayə avtomatik əlavə edildi!`);
     }
 
     function loadVerses(filterQuery = '') {
@@ -153,44 +442,115 @@ DOCTYPE html>
         let data = getStorageData();
         let verses = data[currentSurahIndex] || [];
 
-        // Axtarış filtri
         if (filterQuery) {
             verses = verses.filter(v => v.num.toString().includes(filterQuery) || v.text.toLowerCase().includes(filterQuery.toLowerCase()));
+        }
+
+        if (verses.length === 0) {
+            container.innerHTML = '<div class="empty-state">Hələ ki, heç bir ayə əlavə edilməyib.</div>';
+            return;
         }
 
         verses.forEach((verse) => {
             const div = document.createElement('div');
             div.className = 'verse-card';
             div.innerHTML = `
-                <strong>Ayə ${verse.num}:</strong> <p style="margin: 5px 0 0 0;">${verse.text}</p>
-                <div class="action-btns">
-                    <button class="copy-btn" onclick="copyVerse('${verse.num}', \`${verse.text}\`)">Kopyala</button>
-                    <button class="delete-btn" onclick="deleteVerseByNum(${verse.num})">Sil</button>
+                <div class="verse-header">
+                    <span class="verse-number">AYƏ ${verse.num}</span>
+                    <div class="verse-actions">
+                        <button class="action-btn btn-male" onclick="speakVerse('${verse.num}', \`${verse.text}\`, 'male')">👨 Oğlan</button>
+                        <button class="action-btn btn-female" onclick="speakVerse('${verse.num}', \`${verse.text}\`, 'female')">👩 Qız</button>
+                        <button class="action-btn btn-copy" onclick="copyVerse('${verse.num}', \`${verse.text}\`)">📋 Kopyala</button>
+                        <button class="action-btn btn-delete" onclick="deleteVerseByNum(${verse.num})">🗑️ Sil</button>
+                    </div>
                 </div>
+                <p class="verse-text">${verse.text}</p>
             `;
             container.appendChild(div);
         });
     }
 
+    function speakVerse(num, text, gender) {
+        if (!('speechSynthesis' in window)) {
+            alert('Təəssüf ki, telefonunuzun brauzeri səsləndirmə funksiyasını dəstəkləmir.');
+            return;
+        }
+
+        window.speechSynthesis.cancel();
+
+        const surahName = surahNames[currentSurahIndex - 1];
+        const speechText = `${surahName} surəsi, ${num}-ci ayə. ${text}`;
+        
+        const utterance = new SpeechSynthesisUtterance(speechText);
+        utterance.lang = 'az-AZ';
+
+        // Səsləri oxuyub kişi və ya qadın adına uyğun seçirik
+        const voices = window.speechSynthesis.getVoices();
+        const azVoices = voices.filter(v => v.lang.startsWith('az') || v.lang.startsWith('tr')); // Azərbaycan və ya Türk səsləri
+        
+        if (azVoices.length > 0) {
+            // Səs adlarında "female", "woman", "zira", "yelena" və ya s. axtarırıq və ya siyahıdan seçirik
+            let selectedVoice = azVoices[0];
+            
+            for (let v of azVoices) {
+                const nameLower = v.name.toLowerCase();
+                const isFemale = nameLower.includes('female') || nameLower.includes('woman') || nameLower.includes('qadın') || nameLower.includes('aynur') || nameLower.includes('yelena') || nameLower.includes('zira');
+                const isMale = nameLower.includes('male') || nameLower.includes('man') || nameLower.includes('kişi') || nameLower.includes('cem') || nameLower.includes('atakan');
+
+                if (gender === 'female' && isFemale) {
+                    selectedVoice = v;
+                    break;
+                } else if (gender === 'male' && isMale) {
+                    selectedVoice = v;
+                    break;
+                }
+            }
+            
+            // Əgər dəqiq tapılmasa, siyahıdakı 2-ci səsi qız, 1-ci səsi oğlan kimi fərz edirik (əgər varsa)
+            if (gender === 'female' && azVoices.length > 1) {
+                selectedVoice = azVoices[1];
+            }
+
+            utterance.voice = selectedVoice;
+        }
+
+        // Qız səsi üçün tondurulmuş (bir az incə/canlı), oğlan səsi üçün təmkinli sürət tənzimləməsi
+        if (gender === 'female') {
+            utterance.pitch = 1.2; // Bir az incə ton
+            utterance.rate = 1.0;
+        } else {
+            utterance.pitch = 0.85; // Dərin kişi tonu
+            utterance.rate = 0.92; // Təmkinli debat sürəti
+        }
+        
+        window.speechSynthesis.speak(utterance);
+    }
+
+    // Səslərin brauzerdə dərhal yüklənməsi üçün təminat
+    if ('speechSynthesis' in window) {
+        window.speechSynthesis.onvoiceschanged = () => {
+            window.speechSynthesis.getVoices();
+        };
+    }
+
     function filterVerses() {
-        const query = document.getElementById('verse-search').value.trim();
-        loadVerses(query);
+        loadVerses(document.getElementById('verse-search').value.trim());
     }
 
     function copyVerse(num, text) {
         const surahName = surahNames[currentSurahIndex - 1];
-        const fullText = `${surahName}, ${num}-ci ayə: ${text}`;
+        const fullText = `${currentSurahIndex}. ${surahName}, ${num}-ci ayə:\n${text}`;
         navigator.clipboard.writeText(fullText);
         alert('Ayə kopyalandı!');
     }
 
     function deleteVerseByNum(verseNum) {
+        if(!confirm('Bu ayəni silmək istədiyinizə əminsiniz?')) return;
         let data = getStorageData();
         data[currentSurahIndex] = data[currentSurahIndex].filter(v => v.num !== verseNum);
         localStorage.setItem('quran_data', JSON.stringify(data));
         loadVerses(document.getElementById('verse-search').value.trim());
     }
 </script>
-
 </body>
 </html>
