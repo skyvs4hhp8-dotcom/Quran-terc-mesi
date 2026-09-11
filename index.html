@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Qur'an Tərcüməsi Layihəsi</title>
+    <style>
+        body { font-family: sans-serif; background: #121212; color: #fff; margin: 0; padding: 15px; }
+        h1, h2 { text-align: center; color: #4caf50; }
+        .container { max-width: 600px; margin: auto; }
+        .surah-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; margin-top: 20px; }
+        .surah-btn { background: #1e1e1e; border: 1px solid #333; color: #fff; padding: 12px; border-radius: 8px; cursor: pointer; text-align: left; }
+        .surah-btn:hover { background: #4caf50; }
+        .hidden { display: none; }
+        .back-btn { background: #ff5252; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; margin-bottom: 15px; }
+        .add-box { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; background: #1e1e1e; padding: 15px; border-radius: 8px; }
+        textarea, input { width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #444; background: #2b2b2b; color: white; box-sizing: border-box; }
+        .save-btn { background: #4caf50; color: white; border: none; padding: 10px; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        .verse-card { background: #1e1e1e; padding: 12px; border-radius: 6px; margin-bottom: 10px; border-left: 4px solid #4caf50; position: relative; }
+        .delete-btn { position: absolute; right: 10px; top: 10px; background: #ff5252; border: none; color: white; border-radius: 3px; cursor: pointer; padding: 2px 6px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- SURƏLƏR SİYAHISI -->
+    <div id="surah-view">
+        <h1>Qur'an Surələri</h1>
+        <div class="surah-list" id="surah-container"></div>
+    </div>
+
+    <!-- AYƏ ƏLAVƏ ET MƏRHƏLƏSİ -->
+    <div id="verse-view" class="hidden">
+        <button class="back-btn" onclick="showSurahs()">← Geri (Surələr)</button>
+        <h2 id="current-surah-title"></h2>
+
+        <div class="add-box">
+            <input type="number" id="verse-num" placeholder="Ayə nömrəsi (Məs: 1)">
+            <textarea id="verse-text" rows="3" placeholder="Ayənin mətnini və ya tərcüməsini yazın..."></textarea>
+            <button class="save-btn" onclick="addVerse()">Ayəni Əlavə Et</button>
+        </div>
+
+        <h3>Əlavə Olunmuş Ayələr:</h3>
+        <div id="verses-container"></div>
+    </div>
+</div>
+
+<script>
+    const surahNames = [
+        "1. Fatihə", "2. Bəqərə", "3. Ali-İmran", "4. Nisa", "5. Maidə", "6. Ənam", "7. Əraf", "8. Ənfəl", "9. Tövbə", "10. Yunus",
+        "11. Hud", "12. Yusuf", "13. Rəd", "14. İbrahim", "15. Hicr", "16. Nəhl", "17. İsra", "18. Kəhf", "19. Məryəm", "20. Taha",
+        "21. Ənbiya", "22. Həcc", "23. Möminun", "24. Nur", "25. Furqan", "26. Şüəra", "27. Nəml", "28. Qəsəs", "29. Ənkəbut", "30. Rum",
+        "31. Loğman", "32. Səcdə", "33. Əhzab", "34. Səba", "35. Fatir", "36. Yasin", "37. Saffat", "38. Sad", "39. Zümər", "40. Qafir",
+        "41. Fussilət", "42. Şura", "43. Zuhruf", "44. Duhan", "45. Casiyə", "46. Əhqaf", "47. Məhəmməd", "48. Fətih", "49. Hucurat", "50. Qaf",
+        "51. Zariyat", "52. Tur", "53. Nəcm", "54. Qəmər", "55. Rəhman", "56. Vaqiə", "57. Hədid", "58. Mücadilə", "59. Həşr", "60. Mütəhinə",
+        "61. Səff", "62. Cümə", "63. Münafiqun", "64. Təğabun", "65. Talaq", "66. Təhrim", "67. Mülk", "68. Qələm", "69. Haqqa", "70. Məaric",
+        "71. Nuh", "72. Cinn", "73. Müzzəmmil", "74. Müddəssir", "75. Qiyamət", "76. İnsan", "77. Mürsəlat", "78. Nəbə", "79. Naziat", "80. Əbəsə",
+        "81. Təkvir", "82. İnfitar", "83. Mutaffifin", "84. İnşiqaq", "85. Büruc", "86. Tariq", "87. Əla", "88. Ğaşiyə", "89. Fəcr", "90. Bələd",
+        "91. Şəms", "92. Leyl", "93. Zuha", "94. İnşirah", "95. Tin", "96. Ələq", "97. Qədr", "98. Bəyyinə", "99. Zilzal", "100. Adiyat",
+        "101. Qariə", "102. Təkasür", "103. Əsr", "104. Huməzə", "105. Fil", "106. Qureyş", "107. Maun", "108. Kevsər", "109. Kafirun", "110. Nəsr",
+        "111. Məsəd", "112. İxlas", "113. Fələq", "114. Nas"
+    ];
+
+    let currentSurahIndex = null;
+
+    // Surələri ekrana düzürük
+    const surahContainer = document.getElementById('surah-container');
+    surahNames.forEach((name, index) => {
+        const btn = document.createElement('button');
+        btn.className = 'surah-btn';
+        btn.innerText = name;
+        btn.onclick = () => openSurah(index + 1, name);
+        surahContainer.appendChild(btn);
+    });
+
+    function openSurah(id, name) {
+        currentSurahIndex = id;
+        document.getElementById('surah-view').classList.add('hidden');
+        document.getElementById('verse-view').classList.remove('hidden');
+        document.getElementById('current-surah-title').innerText = name;
+        loadVerses();
+    }
+
+    function showSurahs() {
+        document.getElementById('surah-view').classList.remove('hidden');
+        document.getElementById('verse-view').classList.add('hidden');
+    }
+
+    function getStorageData() {
+        return JSON.parse(localStorage.getItem('quran_data') || '{}');
+    }
+
+    function addVerse() {
+        const num = document.getElementById('verse-num').value.trim();
+        const text = document.getElementById('verse-text').value.trim();
+
+        if (!num || !text) {
+            alert('Xahiş olunur ayə nömrəsini və mətni daxil edin!');
+            return;
+        }
+
+        let data = getStorageData();
+        if (!data[currentSurahIndex]) data[currentSurahIndex] = [];
+
+        // Eyni ayə nömrəsinin olub-olmadığını yoxlayırıq (Təkrarın qarşısını alır)
+        const exists = data[currentSurahIndex].some(v => v.num == num);
+        if (exists) {
+            alert(`Bu surədə artıq ${num}-ci ayə var! Eyni ayəni təkrarlaya bilməzsən.`);
+            return;
+        }
+
+        data[currentSurahIndex].push({ num: parseInt(num), text: text });
+        // Ayələri nömrəsinə görə sıralayırıq
+        data[currentSurahIndex].sort((a, b) => a.num - b.num);
+
+        localStorage.setItem('quran_data', JSON.stringify(data));
+        
+        document.getElementById('verse-num').value = '';
+        document.getElementById('verse-text').value = '';
+        loadVerses();
+    }
+
+    function loadVerses() {
+        const container = document.getElementById('verses-container');
+        container.innerHTML = '';
+        let data = getStorageData();
+        let verses = data[currentSurahIndex] || [];
+
+        verses.forEach((verse, i) => {
+            const div = document.createElement('div');
+            div.className = 'verse-card';
+            div.innerHTML = `
+                <strong>Ayə ${verse.num}:</strong> <p style="margin: 5px 0 0 0;">${verse.text}</p>
+                <button class="delete-btn" onclick="deleteVerse(${i})">Sil</button>
+            `;
+            container.appendChild(div);
+        });
+    }
+
+    function deleteVerse(index) {
+        let data = getStorageData();
+        data[currentSurahIndex].splice(index, 1);
+        localStorage.setItem('quran_data', JSON.stringify(data));
+        loadVerses();
+    }
+</script>
+
+</body>
+</html>
