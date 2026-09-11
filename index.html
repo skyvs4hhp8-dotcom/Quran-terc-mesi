@@ -72,7 +72,6 @@
             font-style: italic;
         }
 
-        /* Yaradıcılar Bölməsi (Bomba Dizayn) */
         .creators-card {
             background: linear-gradient(135deg, rgba(30, 41, 59, 0.85), rgba(15, 23, 42, 0.9));
             border: 1px solid rgba(245, 158, 11, 0.3);
@@ -186,7 +185,36 @@
             font-weight: 600;
             font-size: 14px;
             cursor: pointer;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
+        }
+
+        .batch-actions {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .btn-batch {
+            flex: 1;
+            padding: 10px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            text-align: center;
+        }
+
+        .btn-copy-all {
+            background: rgba(59, 130, 246, 0.15);
+            color: #60a5fa;
+            border: 1px solid rgba(59, 130, 246, 0.3);
+        }
+
+        .btn-clear-all {
+            background: rgba(239, 68, 68, 0.15);
+            color: var(--danger);
+            border: 1px solid rgba(239, 68, 68, 0.3);
         }
 
         .add-card {
@@ -346,7 +374,6 @@
             <p>Qəlblərə Fərəh Gətirən Şəxsi Arxiv</p>
         </div>
 
-        <!-- Yaradıcılar (Ağa Babayev & Rzazadə Rüfet) -->
         <div class="creators-card">
             <div class="creators-title">Layihə Müəllifləri</div>
             <div class="creators-names">Ağa Babayev &bull; Rzazadə Rüfet</div>
@@ -369,8 +396,14 @@
     <div id="verse-view" class="hidden">
         <button class="back-btn" onclick="showSurahs()">← Surələrə Qayıt</button>
 
-        <div class="app-header" style="text-align: left; margin-bottom: 15px; padding: 10px;">
+        <div class="app-header" style="text-align: left; margin-bottom: 10px; padding: 10px;">
             <h1 id="current-surah-title" style="font-size: 22px;"></h1>
+        </div>
+
+        <!-- Toplu Əməliyyatlar (Hamısını Kopyala və Hamısını Sil) -->
+        <div class="batch-actions">
+            <button class="btn-batch btn-copy-all" onclick="copyAllVerses()">📋 Hamısını Kopyala</button>
+            <button class="btn-batch btn-clear-all" onclick="clearAllVerses()">🗑️ Of ki, hamısını sil</button>
         </div>
 
         <div class="add-card">
@@ -568,6 +601,33 @@
         const fullText = `${currentSurahIndex}. ${surahName}, ${num}-ci ayə:\n${text}`;
         navigator.clipboard.writeText(fullText);
         alert('Ayə kopyalandı!');
+    }
+
+    function copyAllVerses() {
+        let data = getStorageData();
+        let verses = data[currentSurahIndex] || [];
+        if (verses.length === 0) {
+            alert('Kopyalanacaq ayə yoxdur!');
+            return;
+        }
+        const surahName = surahNames[currentSurahIndex - 1];
+        let fullText = `${currentSurahIndex}. ${surahName} Surəsi:\n\n`;
+        verses.forEach(v => {
+            fullText += `${v.num}. ${v.text}\n\n`;
+        });
+        navigator.clipboard.writeText(fullText);
+        alert('Surənin bütün ayələri yaddaşa kopyalandı!');
+    }
+
+    function clearAllVerses() {
+        if(!confirm('Of ki, bu surənin bütün ayələri silinsin?')) return;
+        let data = getStorageData();
+        if (data[currentSurahIndex]) {
+            delete data[currentSurahIndex];
+            localStorage.setItem('quran_data', JSON.stringify(data));
+            loadVerses();
+            alert('Surə tamamilə təmizləndi!');
+        }
     }
 
     function deleteVerseByNum(verseNum) {
