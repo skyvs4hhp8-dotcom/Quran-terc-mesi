@@ -18,6 +18,7 @@
             --primary: #f59e0b;
             --primary-glow: rgba(245, 158, 11, 0.2);
             --accent: #10b981;
+            --accent-glow: rgba(16, 185, 129, 0.25);
             --danger: #ef4444;
             --text-main: #f8fafc;
             --text-muted: #cbd5e1;
@@ -147,11 +148,37 @@
             align-items: center;
             gap: 12px;
             transition: all 0.2s;
+            position: relative;
         }
 
         .surah-card:hover {
             border-color: var(--primary);
             transform: translateY(-2px);
+        }
+
+        /* Qaldığın surə yaşıl rəngdə olsun */
+        .surah-card.active-bookmark {
+            border-color: var(--accent);
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(30, 41, 59, 0.85));
+            box-shadow: 0 0 15px var(--accent-glow);
+        }
+
+        .surah-card.active-bookmark .surah-badge {
+            background: rgba(16, 185, 129, 0.25);
+            color: var(--accent);
+            border-color: rgba(16, 185, 129, 0.4);
+        }
+
+        .bookmark-dot {
+            position: absolute;
+            top: 8px;
+            right: 10px;
+            font-size: 10px;
+            background: var(--accent);
+            color: #000;
+            padding: 2px 6px;
+            border-radius: 6px;
+            font-weight: 700;
         }
 
         .surah-badge {
@@ -301,6 +328,13 @@
             position: relative;
         }
 
+        /* Qaldığın ayənin kartı yaşıl olsun */
+        .verse-card.bookmarked-verse {
+            border-color: var(--accent);
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.12), rgba(30, 41, 59, 0.85));
+            box-shadow: 0 0 20px var(--accent-glow);
+        }
+
         .verse-header {
             display: flex;
             justify-content: space-between;
@@ -320,18 +354,37 @@
             border: 1px solid rgba(245, 158, 11, 0.25);
         }
 
+        .verse-card.bookmarked-verse .verse-number {
+            background: rgba(16, 185, 129, 0.25);
+            color: var(--accent);
+            border-color: rgba(16, 185, 129, 0.4);
+        }
+
         .verse-actions {
             display: flex;
-            gap: 8px;
+            gap: 6px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
         }
 
         .action-btn {
             border: none;
-            padding: 6px 12px;
+            padding: 6px 10px;
             border-radius: 8px;
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 600;
             cursor: pointer;
+        }
+
+        .btn-bookmark {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--accent);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .verse-card.bookmarked-verse .btn-bookmark {
+            background: var(--accent);
+            color: #000;
         }
 
         .btn-copy {
@@ -441,14 +494,33 @@
     let currentSurahIndex = null;
     const surahContainer = document.getElementById('surah-container');
 
+    function getStorageData() {
+        return JSON.parse(localStorage.getItem('quran_data') || '{}');
+    }
+
+    function getBookmark() {
+        return JSON.parse(localStorage.getItem('quran_bookmark') || 'null');
+    }
+
     function renderSurahs(list) {
         surahContainer.innerHTML = '';
+        const bookmark = getBookmark();
+
         list.forEach((name) => {
             const originalIndex = surahNames.indexOf(name) + 1;
             const card = document.createElement('div');
-            card.className = 'surah-card';
+            
+            let isBookmarked = bookmark && Number(bookmark.surah) === Number(originalIndex);
+            card.className = `surah-card ${isBookmarked ? 'active-bookmark' : ''}`;
+            
             card.onclick = () => openSurah(originalIndex, `${originalIndex}. ${name}`);
-            card.innerHTML = `<div class="surah-badge">${originalIndex}</div><div class="surah-title">${name}</div>`;
+            
+            let bookmarkBadge = isBookmarked ? `<div class="bookmark-dot">📌 ${bookmark.verse}-ci ayə</div>` : '';
+            card.innerHTML = `
+                <div class="surah-badge">${originalIndex}</div>
+                <div class="surah-title">${name}</div>
+                ${bookmarkBadge}
+            `;
             surahContainer.appendChild(card);
         });
     }
@@ -472,22 +544,18 @@
     }
 
     function showSurahs() {
+        renderSurahs(surahNames); // Ana səhifəyə qayıdanda işarəni yeniləyirik
         document.getElementById('surah-view').classList.remove('hidden');
         document.getElementById('verse-view').classList.add('hidden');
         window.scrollTo(0, 0);
     }
 
-    function getStorageData() {
-        return JSON.parse(localStorage.getItem('quran_data') || '{}');
-    }
-
     function exportData() {
         const data = localStorage.getItem('quran_data');
-        if (!data || data === '{}') {
-            alert('Arxivdə hələ heç nə yoxdur!');
-            return;
-        }
-        const blob = new Blob([data], { type: 'application/json' });
+        const bookmark = localStorage.getItem('quran_bookmark');
+        const exportObj = { data: JSON.parse(data || '{}'), bookmark: JSON.parse(bookmark || 'null') };
+        
+        const blob = new Blob([JSON.stringify(exportObj)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -508,14 +576,26 @@
         reader.onload = function(e) {
             try {
                 const parsed = JSON.parse(e.target.result);
-                localStorage.setItem('quran_data', JSON.stringify(parsed));
-                alert('Məlumatlar hüzurla bərpa olundu!');
+                if (parsed.data) {
+                    localStorage.setItem('quran_data', JSON.stringify(parsed.data));
+                    localStorage.setItem('quran_bookmark', JSON.stringify(parsed.bookmark));
+                } else {
+                    localStorage.setItem('quran_data', JSON.stringify(parsed));
+                }
+                alert('Məlumatlar və qaldığın yer bərpa olundu!');
                 renderSurahs(surahNames);
             } catch (err) {
                 alert('Fayl xətalıdır!');
             }
         };
         reader.readAsText(file);
+    }
+
+    function setBookmark(verseNum) {
+        const bookmarkData = { surah: currentSurahIndex, verse: verseNum };
+        localStorage.setItem('quran_bookmark', JSON.stringify(bookmarkData));
+        loadVerses(document.getElementById('verse-search').value.trim());
+        alert(`Qaldığın yer yadda saxlanıldı: Ayə ${verseNum} 📌`);
     }
 
     function addVerse() {
@@ -564,6 +644,7 @@
         container.innerHTML = '';
         let data = getStorageData();
         let verses = data[currentSurahIndex] || [];
+        const bookmark = getBookmark();
 
         if (filterQuery) {
             verses = verses.filter(v => v.num.toString().includes(filterQuery) || v.text.toLowerCase().includes(filterQuery.toLowerCase()));
@@ -575,12 +656,15 @@
         }
 
         verses.forEach((verse) => {
+            const isBookmarked = bookmark && Number(bookmark.surah) === Number(currentSurahIndex) && Number(bookmark.verse) === Number(verse.num);
+            
             const div = document.createElement('div');
-            div.className = 'verse-card';
+            div.className = `verse-card ${isBookmarked ? 'bookmarked-verse' : ''}`;
             div.innerHTML = `
                 <div class="verse-header">
-                    <span class="verse-number">AYƏ ${verse.num}</span>
+                    <span class="verse-number">AYƏ ${verse.num} ${isBookmarked ? '📌 (Qaldığın yer)' : ''}</span>
                     <div class="verse-actions">
+                        <button class="action-btn btn-bookmark" onclick="setBookmark(${verse.num})">${isBookmarked ? '📌 Qaldığım yer' : '📍 Burada qaldım'}</button>
                         <button class="action-btn btn-copy" onclick="copyVerse('${verse.num}', \`${verse.text}\`)">📋 Kopyala</button>
                         <button class="action-btn btn-delete" onclick="deleteVerseByNum(${verse.num})">🗑️ Sil</button>
                     </div>
